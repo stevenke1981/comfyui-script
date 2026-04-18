@@ -1,0 +1,15 @@
+# LoRA list. Same format as models.txt: <subdir>|<url>|<optional filename>
+# <subdir> is usually `loras` (under ComfyUI/models/loras).
+#
+# For Civitai, set CIVITAI_TOKEN to download gated files.
+# Uncomment the lines you want.
+
+# --- SDXL LoRAs ---
+# loras|https://huggingface.co/latent-consistency/lcm-lora-sdxl/resolve/main/pytorch_lora_weights.safetensors|lcm-lora-sdxl.safetensors
+# loras|https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_offset_example-lora_1.0.safetensors|sdxl_offset_example.safetensors
+
+# --- SD 1.5 LoRAs ---
+# loras|https://huggingface.co/latent-consistency/lcm-lora-sdv1-5/resolve/main/pytorch_lora_weights.safetensors|lcm-lora-sdv1-5.safetensors
+
+# --- Civitai example (replace with a specific version URL) ---
+# loras|https://civitai.com/api/download/models/XXXXXX|example_lora.safetensors

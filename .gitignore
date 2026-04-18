@@ -1,0 +1,15 @@
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!/.env.example
+venv/
+__pycache__/
+*.pyc
+
+# Local Claude Code / editor state — never publish
+.claude/

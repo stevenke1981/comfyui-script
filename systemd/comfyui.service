@@ -1,0 +1,26 @@
+[Unit]
+Description=ComfyUI (Stable Diffusion node-based UI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+WorkingDirectory=__ROOT__
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=__ROOT__/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=__ROOT__/venv/bin/python __ROOT__/main.py --listen __BIND__ --port __PORT__ __EXTRA__
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=__ROOT__
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# Shell scripts and service units MUST use LF on disk so they run on Linux.
+*.sh        text eol=lf
+*.service   text eol=lf
+*.txt       text eol=lf
+*.md        text eol=lf
+LICENSE     text eol=lf
+
+# Binary
+*.png       binary
+*.jpg       binary
+*.safetensors binary
+*.ckpt      binary

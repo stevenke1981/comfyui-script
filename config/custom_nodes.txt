@@ -1,0 +1,29 @@
+# Custom nodes to install. One git URL per line. Comments start with #.
+# Pulled into $COMFYUI_ROOT/custom_nodes/ and their requirements.txt is installed.
+
+# ComfyUI-Manager — node/model browser (required for comfortable operation)
+https://github.com/ltdrdata/ComfyUI-Manager.git
+
+# ComfyUI-Impact-Pack — detailers, segmentation, face/person improvements
+https://github.com/ltdrdata/ComfyUI-Impact-Pack.git
+
+# rgthree-comfy — pipe/mute/bypass helpers and QoL nodes
+https://github.com/rgthree/rgthree-comfy.git
+
+# ComfyUI-Custom-Scripts — UI quality-of-life
+https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git
+
+# was-node-suite-comfyui — huge pack of utility nodes
+https://github.com/WASasquatch/was-node-suite-comfyui.git
+
+# ComfyUI_essentials — common helpers
+https://github.com/cubiq/ComfyUI_essentials.git
+
+# ControlNet Aux — preprocessors for ControlNet
+https://github.com/Fannovel16/comfyui_controlnet_aux.git
+
+# Efficiency Nodes — compact workflow building blocks
+https://github.com/jags111/efficiency-nodes-comfyui.git
+
+# VideoHelperSuite — AnimateDiff / video I/O helpers
+https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git

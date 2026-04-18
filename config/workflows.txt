@@ -1,0 +1,8 @@
+# Workflow JSONs saved into ComfyUI/user/default/workflows/
+# Format: <subdir>|<url>|<optional filename>
+# <subdir> stays relative to the workflows directory; use "." to put at the root.
+#
+# Uncomment the ones you want installed on first boot.
+
+# .|https://raw.githubusercontent.com/comfyanonymous/ComfyUI_examples/master/sdxl/sdxl_refiner_prompt_example.json|sdxl_refiner_prompt_example.json
+# .|https://raw.githubusercontent.com/comfyanonymous/ComfyUI_examples/master/flux/flux_dev_example.png.json|flux_dev_example.json
