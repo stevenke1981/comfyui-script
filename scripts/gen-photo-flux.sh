@@ -102,15 +102,17 @@ echo "Size   : ${WIDTH}x${HEIGHT}  Steps: $STEPS  Guidance: $GUIDANCE  Seed: $SE
 echo "Host   : http://$HOST"
 
 # ── build workflow JSON ───────────────────────────────────────────────────────
-WORKFLOW=$(python3 - <<PYEOF
-import json, sys
+WORKFLOW=$(FLUX_PROMPT="$PROMPT" FLUX_WIDTH="$WIDTH" FLUX_HEIGHT="$HEIGHT" \
+           FLUX_STEPS="$STEPS" FLUX_GUIDANCE="$GUIDANCE" FLUX_SEED="$SEED" \
+           python3 - <<'PYEOF'
+import json, os
 
-prompt   = sys.argv[1]
-width    = int(sys.argv[2])
-height   = int(sys.argv[3])
-steps    = int(sys.argv[4])
-guidance = float(sys.argv[5])
-seed     = int(sys.argv[6])
+prompt   = os.environ['FLUX_PROMPT']
+width    = int(os.environ['FLUX_WIDTH'])
+height   = int(os.environ['FLUX_HEIGHT'])
+steps    = int(os.environ['FLUX_STEPS'])
+guidance = float(os.environ['FLUX_GUIDANCE'])
+seed     = int(os.environ['FLUX_SEED'])
 
 workflow = {
   "1": {
@@ -168,7 +170,7 @@ workflow = {
 }
 print(json.dumps({"prompt": workflow}))
 PYEOF
-"$PROMPT" "$WIDTH" "$HEIGHT" "$STEPS" "$GUIDANCE" "$SEED")
+)
 
 # ── submit ────────────────────────────────────────────────────────────────────
 RESPONSE=$(curl -sf -X POST "http://$HOST/prompt" \

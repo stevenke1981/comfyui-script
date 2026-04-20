@@ -108,19 +108,22 @@ echo "Size   : ${WIDTH}x${HEIGHT}  Steps: $STEPS  Guidance: $GUIDANCE  Seed: $SE
 echo "Host   : http://$HOST"
 
 # ── build workflow JSON ───────────────────────────────────────────────────────
-WORKFLOW=$(python3 - <<PYEOF
-import json, sys
+WORKFLOW=$(FLUX_PROMPT="$PROMPT" FLUX_WIDTH="$WIDTH" FLUX_HEIGHT="$HEIGHT" \
+           FLUX_STEPS="$STEPS" FLUX_GUIDANCE="$GUIDANCE" FLUX_SEED="$SEED" \
+           FLUX_MODEL="$GGUF_MODEL" FLUX_CLIP1="$CLIP1" FLUX_CLIP2="$CLIP2" FLUX_VAE="$VAE" \
+           python3 - <<'PYEOF'
+import json, os
 
-prompt     = sys.argv[1]
-width      = int(sys.argv[2])
-height     = int(sys.argv[3])
-steps      = int(sys.argv[4])
-guidance   = float(sys.argv[5])
-seed       = int(sys.argv[6])
-gguf_model = sys.argv[7]
-clip1      = sys.argv[8]
-clip2      = sys.argv[9]
-vae        = sys.argv[10]
+prompt     = os.environ['FLUX_PROMPT']
+width      = int(os.environ['FLUX_WIDTH'])
+height     = int(os.environ['FLUX_HEIGHT'])
+steps      = int(os.environ['FLUX_STEPS'])
+guidance   = float(os.environ['FLUX_GUIDANCE'])
+seed       = int(os.environ['FLUX_SEED'])
+gguf_model = os.environ['FLUX_MODEL']
+clip1      = os.environ['FLUX_CLIP1']
+clip2      = os.environ['FLUX_CLIP2']
+vae        = os.environ['FLUX_VAE']
 
 workflow = {
   "1": {
@@ -178,7 +181,7 @@ workflow = {
 }
 print(json.dumps({"prompt": workflow}))
 PYEOF
-"$PROMPT" "$WIDTH" "$HEIGHT" "$STEPS" "$GUIDANCE" "$SEED" "$GGUF_MODEL" "$CLIP1" "$CLIP2" "$VAE")
+)
 
 # ── submit ────────────────────────────────────────────────────────────────────
 RESPONSE=$(curl -sf -X POST "http://$HOST/prompt" \
