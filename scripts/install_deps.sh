@@ -3,17 +3,22 @@
 
 set -euo pipefail
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+
 if [[ $EUID -ne 0 ]]; then
-    echo "[ERR] This step must run as root (use sudo)." >&2
+    err "This step must run as root (use sudo)."
     exit 1
 fi
 
 export DEBIAN_FRONTEND=noninteractive
 
-echo "[INFO] Updating apt index..."
+log "Updating apt index..."
 apt-get update -y
 
-echo "[INFO] Installing base packages..."
+log "Installing base packages..."
 apt-get install -y --no-install-recommends \
     ca-certificates curl wget git aria2 \
     build-essential pkg-config cmake ninja-build \
@@ -22,8 +27,4 @@ apt-get install -y --no-install-recommends \
     libjpeg-dev libpng-dev \
     ufw jq unzip tmux htop lsof pciutils net-tools
 
-# Ensure pip/venv for Python 3
-python3 -m pip install --upgrade pip --break-system-packages || \
-    python3 -m pip install --upgrade pip
-
-echo "[OK] System dependencies installed."
+ok "System dependencies installed."

@@ -3,8 +3,13 @@
 
 set -euo pipefail
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+
 if [[ $EUID -ne 0 ]]; then
-    echo "[ERR] This step must run as root (use sudo)." >&2
+    err "This step must run as root (use sudo)."
     exit 1
 fi
 
@@ -16,7 +21,7 @@ COMFYUI_BIND="${COMFYUI_BIND:-0.0.0.0}"
 COMFYUI_EXTRA_ARGS="${COMFYUI_EXTRA_ARGS:-}"
 
 if [[ -z "$COMFYUI_USER" || "$COMFYUI_USER" == "root" ]]; then
-    echo "[ERR] COMFYUI_USER must be a non-root user. Set it via env or run via sudo as a normal user." >&2
+    err "COMFYUI_USER must be a non-root user. Set it via env or run via sudo as a normal user."
     exit 1
 fi
 
@@ -24,11 +29,11 @@ SERVICE_FILE=/etc/systemd/system/comfyui.service
 TEMPLATE="$SCRIPT_DIR/systemd/comfyui.service"
 
 if [[ ! -f "$TEMPLATE" ]]; then
-    echo "[ERR] Service template missing: $TEMPLATE" >&2
+    err "Service template missing: $TEMPLATE"
     exit 1
 fi
 
-echo "[INFO] Writing $SERVICE_FILE"
+log "Writing $SERVICE_FILE"
 sed \
     -e "s|__USER__|$COMFYUI_USER|g" \
     -e "s|__ROOT__|$COMFYUI_ROOT|g" \
@@ -41,4 +46,4 @@ chmod 644 "$SERVICE_FILE"
 systemctl daemon-reload
 systemctl enable comfyui.service
 
-echo "[OK] systemd service installed. Start with: systemctl start comfyui"
+ok "systemd service installed. Start with: systemctl start comfyui"

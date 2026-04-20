@@ -3,12 +3,17 @@
 
 set -euo pipefail
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+
 COMFYUI_ROOT="${COMFYUI_ROOT:-$HOME/ComfyUI}"
 COMFYUI_USER="${COMFYUI_USER:-$USER}"
 VENDOR="$(cat /tmp/comfyui-gpu 2>/dev/null || echo cpu)"
 
-echo "[INFO] Installing ComfyUI to: $COMFYUI_ROOT"
-echo "[INFO] GPU vendor for torch selection: $VENDOR"
+log "Installing ComfyUI to: $COMFYUI_ROOT"
+log "GPU vendor for torch selection: $VENDOR"
 
 # Create install dir with correct ownership
 if [[ $EUID -eq 0 ]]; then
@@ -27,7 +32,7 @@ run_as_user() {
 if [[ ! -d "$COMFYUI_ROOT/.git" ]]; then
     run_as_user "git clone https://github.com/comfyanonymous/ComfyUI.git '$COMFYUI_ROOT'"
 else
-    echo "[INFO] ComfyUI repo already present, pulling latest..."
+    log "ComfyUI repo already present, pulling latest..."
     run_as_user "git -C '$COMFYUI_ROOT' pull --ff-only"
 fi
 
@@ -44,20 +49,20 @@ run_as_user "$PIP install --upgrade pip wheel setuptools"
 # Install PyTorch per vendor
 case "$VENDOR" in
     nvidia)
-        echo "[INFO] Installing PyTorch CUDA 12.4 wheels..."
+        log "Installing PyTorch CUDA 12.4 wheels..."
         run_as_user "$PIP install --upgrade torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124"
         ;;
     amd)
-        echo "[INFO] Installing PyTorch ROCm 6.1 wheels..."
+        log "Installing PyTorch ROCm 6.1 wheels..."
         run_as_user "$PIP install --upgrade torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.1"
         ;;
     intel)
-        echo "[INFO] Installing PyTorch CPU wheels + IPEX..."
+        log "Installing PyTorch CPU wheels + IPEX..."
         run_as_user "$PIP install --upgrade torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
         run_as_user "$PIP install --upgrade intel-extension-for-pytorch || true"
         ;;
     cpu|*)
-        echo "[INFO] Installing PyTorch CPU wheels..."
+        log "Installing PyTorch CPU wheels..."
         run_as_user "$PIP install --upgrade torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
         ;;
 esac
@@ -68,4 +73,4 @@ run_as_user "$PIP install -r '$COMFYUI_ROOT/requirements.txt'"
 # Sanity check
 run_as_user "$PY -c 'import torch; print(\"torch:\", torch.__version__, \"cuda:\", torch.cuda.is_available())'"
 
-echo "[OK] ComfyUI installed at $COMFYUI_ROOT"
+ok "ComfyUI installed at $COMFYUI_ROOT"

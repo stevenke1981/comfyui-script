@@ -20,6 +20,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMFYUI_ROOT="${COMFYUI_ROOT:-$HOME/ComfyUI}"
 COMFYUI_USER="${COMFYUI_USER:-$USER}"
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+
 cmd="${1:-}"; shift || true
 
 sudo_needed() {
@@ -41,18 +46,18 @@ case "$cmd" in
         sudo_needed journalctl -u comfyui.service -f --no-pager
         ;;
     update)
-        echo "[INFO] Stopping service..."
+        log "Stopping service..."
         sudo_needed systemctl stop comfyui.service || true
-        echo "[INFO] Pulling ComfyUI..."
+        log "Pulling ComfyUI..."
         git -C "$COMFYUI_ROOT" pull --ff-only
-        echo "[INFO] Updating Python deps..."
+        log "Updating Python deps..."
         "$COMFYUI_ROOT/venv/bin/pip" install -r "$COMFYUI_ROOT/requirements.txt"
         sudo_needed systemctl start comfyui.service
         ;;
     update-nodes)
         for d in "$COMFYUI_ROOT/custom_nodes"/*/; do
             [[ -d "$d/.git" ]] || continue
-            echo "[INFO] Updating $d"
+            log "Updating $d"
             git -C "$d" pull --ff-only || true
             [[ -f "$d/requirements.txt" ]] && "$COMFYUI_ROOT/venv/bin/pip" install -r "$d/requirements.txt" || true
         done
@@ -63,19 +68,19 @@ case "$cmd" in
         ;;
     add-model)
         subdir="${1:-}"; url="${2:-}"; fname="${3:-}"
-        [[ -z "$subdir" || -z "$url" ]] && { echo "Usage: manage.sh add-model <subdir> <url> [filename]"; exit 1; }
+        [[ -z "$subdir" || -z "$url" ]] && { err "Usage: manage.sh add-model <subdir> <url> [filename]"; exit 1; }
         echo "${subdir}|${url}|${fname}" >> "$SCRIPT_DIR/config/models.txt"
         bash "$SCRIPT_DIR/scripts/download_models.sh"
         ;;
     add-lora)
         url="${1:-}"; fname="${2:-}"
-        [[ -z "$url" ]] && { echo "Usage: manage.sh add-lora <url> [filename]"; exit 1; }
+        [[ -z "$url" ]] && { err "Usage: manage.sh add-lora <url> [filename]"; exit 1; }
         echo "loras|${url}|${fname}" >> "$SCRIPT_DIR/config/loras.txt"
         bash "$SCRIPT_DIR/scripts/download_models.sh"
         ;;
     add-node)
         url="${1:-}"
-        [[ -z "$url" ]] && { echo "Usage: manage.sh add-node <git-url>"; exit 1; }
+        [[ -z "$url" ]] && { err "Usage: manage.sh add-node <git-url>"; exit 1; }
         echo "$url" >> "$SCRIPT_DIR/config/custom_nodes.txt"
         bash "$SCRIPT_DIR/scripts/install_custom_nodes.sh"
         sudo_needed systemctl restart comfyui.service
@@ -86,14 +91,14 @@ case "$cmd" in
     gpu)
         if command -v nvidia-smi >/dev/null; then nvidia-smi
         elif command -v rocm-smi >/dev/null; then rocm-smi
-        else echo "No GPU tool found."
+        else warn "No GPU tool found."
         fi
         ;;
     ""|-h|--help)
         sed -n '1,30p' "$0"
         ;;
     *)
-        echo "Unknown command: $cmd" >&2
+        err "Unknown command: $cmd"
         exit 1
         ;;
 esac

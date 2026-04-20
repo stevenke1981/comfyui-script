@@ -7,6 +7,13 @@
 
 set -euo pipefail
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+skip() { printf '\033[1;34m[SKIP]\033[0m  %s\n' "$*"; }
+dl()   { printf '\033[1;35m[DL]\033[0m    %s\n' "$*"; }
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMFYUI_ROOT="${COMFYUI_ROOT:-$HOME/ComfyUI}"
 COMFYUI_USER="${COMFYUI_USER:-$USER}"
@@ -32,11 +39,11 @@ download_one() {
     local out="$target_dir/$fname"
 
     if [[ -s "$out" ]]; then
-        echo "[SKIP] $out (already exists)"
+        skip "$out (already exists)"
         return 0
     fi
 
-    echo "[DL]   $subdir/$fname  <=  $url"
+    dl "$subdir/$fname  <=  $url"
 
     # Auth header for HuggingFace / Civitai if env var present
     local hdrs=()
@@ -49,7 +56,7 @@ download_one() {
 
     if command -v aria2c >/dev/null 2>&1; then
         run_as_user "aria2c -x 8 -s 8 -c --dir='$target_dir' --out='$fname' '${hdrs[*]:-}' '$url'" || {
-            echo "[WARN] aria2c failed, falling back to wget"
+            warn "aria2c failed, falling back to wget"
             run_as_user "wget -c -O '$out.part' ${hdrs[*]:-} '$url' && mv '$out.part' '$out'"
         }
     else
@@ -59,8 +66,8 @@ download_one() {
 
 process_config() {
     local cfg="$1" base="$2"
-    [[ -f "$cfg" ]] || { echo "[WARN] Missing config: $cfg"; return 0; }
-    echo "[INFO] Processing $cfg -> $base"
+    [[ -f "$cfg" ]] || { warn "Missing config: $cfg"; return 0; }
+    log "Processing $cfg -> $base"
 
     while IFS= read -r line || [[ -n "$line" ]]; do
         line="${line%%#*}"
@@ -73,18 +80,18 @@ process_config() {
         fname="$(echo "${fname:-}" | xargs)"
 
         if [[ -z "$subdir" || -z "$url" ]]; then
-            echo "[WARN] Malformed line: $line"
+            warn "Malformed line: $line"
             continue
         fi
         download_one "$subdir" "$url" "$fname" "$base"
     done < "$cfg"
 }
 
-echo "[INFO] Downloading models into: $MODELS_DIR"
+log "Downloading models into: $MODELS_DIR"
 process_config "$SCRIPT_DIR/config/models.txt"    "$MODELS_DIR"
 process_config "$SCRIPT_DIR/config/loras.txt"     "$MODELS_DIR"
 
-echo "[INFO] Downloading workflows into: $WORKFLOWS_DIR"
+log "Downloading workflows into: $WORKFLOWS_DIR"
 process_config "$SCRIPT_DIR/config/workflows.txt" "$WORKFLOWS_DIR"
 
-echo "[OK] Model / workflow download finished."
+ok "Model / workflow download finished."

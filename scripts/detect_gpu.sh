@@ -4,8 +4,13 @@
 
 set -euo pipefail
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+
 if [[ $EUID -ne 0 ]]; then
-    echo "[ERR] This step must run as root (use sudo)." >&2
+    err "This step must run as root (use sudo)."
     exit 1
 fi
 
@@ -25,39 +30,39 @@ elif echo "$lspci_out" | grep -Ei 'VGA|3D|Display' | grep -qi intel; then
     VENDOR="intel"
 fi
 
-echo "[INFO] Detected GPU vendor: $VENDOR"
+log "Detected GPU vendor: $VENDOR"
 echo "$VENDOR" > /tmp/comfyui-gpu
 
 case "$VENDOR" in
     nvidia)
         if ! command -v nvidia-smi >/dev/null 2>&1; then
-            echo "[INFO] Installing NVIDIA driver + CUDA toolkit..."
+            log "Installing NVIDIA driver + CUDA toolkit..."
             apt-get update -y
             # ubuntu-drivers picks the recommended driver
             apt-get install -y ubuntu-drivers-common
             ubuntu-drivers autoinstall || {
-                echo "[WARN] ubuntu-drivers autoinstall failed. Falling back to nvidia-driver-535."
+                warn "ubuntu-drivers autoinstall failed. Falling back to nvidia-driver-535."
                 apt-get install -y nvidia-driver-535
             }
             apt-get install -y nvidia-cuda-toolkit || \
-                echo "[WARN] nvidia-cuda-toolkit not installed from apt. PyTorch ships its own CUDA runtime."
-            echo "[WARN] NVIDIA driver installed. A REBOOT may be required before ComfyUI can use the GPU."
+                warn "nvidia-cuda-toolkit not installed from apt. PyTorch ships its own CUDA runtime."
+            warn "NVIDIA driver installed. A REBOOT may be required before ComfyUI can use the GPU."
         fi
-        nvidia-smi || echo "[WARN] nvidia-smi not yet working; reboot required."
+        nvidia-smi || warn "nvidia-smi not yet working; reboot required."
         ;;
     amd)
-        echo "[INFO] Installing ROCm dependencies (AMD)..."
+        log "Installing ROCm dependencies (AMD)..."
         apt-get install -y libnuma-dev || true
         # We rely on PyTorch's ROCm wheels at the install_comfyui step.
-        echo "[WARN] AMD: PyTorch ROCm wheels will be used. Full ROCm stack install is left to the admin."
+        warn "AMD: PyTorch ROCm wheels will be used. Full ROCm stack install is left to the admin."
         ;;
     intel)
-        echo "[INFO] Intel GPU detected. ComfyUI will run with IPEX or CPU fallback."
+        log "Intel GPU detected. ComfyUI will run with IPEX or CPU fallback."
         apt-get install -y intel-opencl-icd || true
         ;;
     cpu)
-        echo "[WARN] No discrete GPU detected. ComfyUI will run on CPU (very slow)."
+        warn "No discrete GPU detected. ComfyUI will run on CPU (very slow)."
         ;;
 esac
 
-echo "[OK] GPU detection finished: $VENDOR"
+ok "GPU detection finished: $VENDOR"

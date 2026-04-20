@@ -3,6 +3,11 @@
 
 set -euo pipefail
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMFYUI_ROOT="${COMFYUI_ROOT:-$HOME/ComfyUI}"
 COMFYUI_USER="${COMFYUI_USER:-$USER}"
@@ -19,16 +24,16 @@ run_as_user() {
 }
 
 if [[ ! -d "$NODES_DIR" ]]; then
-    echo "[ERR] custom_nodes dir missing: $NODES_DIR. Did you run install_comfyui?" >&2
+    err "custom_nodes dir missing: $NODES_DIR. Did you run install_comfyui?"
     exit 1
 fi
 
 if [[ ! -f "$CONFIG" ]]; then
-    echo "[WARN] No custom_nodes.txt found at $CONFIG. Skipping."
+    warn "No custom_nodes.txt found at $CONFIG. Skipping."
     exit 0
 fi
 
-echo "[INFO] Installing custom nodes from $CONFIG"
+log "Installing custom nodes from $CONFIG"
 
 while IFS= read -r line || [[ -n "$line" ]]; do
     # Strip comments and trim
@@ -40,18 +45,18 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     target="$NODES_DIR/$name"
 
     if [[ -d "$target/.git" ]]; then
-        echo "[INFO] Updating $name"
-        run_as_user "git -C '$target' pull --ff-only" || echo "[WARN] pull failed for $name"
+        log "Updating $name"
+        run_as_user "git -C '$target' pull --ff-only" || warn "pull failed for $name"
     else
-        echo "[INFO] Cloning $name"
-        run_as_user "git clone --depth=1 '$url' '$target'" || { echo "[WARN] clone failed for $url"; continue; }
+        log "Cloning $name"
+        run_as_user "git clone --depth=1 '$url' '$target'" || { warn "clone failed for $url"; continue; }
     fi
 
     # Install node requirements if present
     if [[ -f "$target/requirements.txt" ]]; then
-        echo "[INFO] Installing Python deps for $name"
-        run_as_user "$PIP install -r '$target/requirements.txt'" || echo "[WARN] pip install failed for $name"
+        log "Installing Python deps for $name"
+        run_as_user "$PIP install -r '$target/requirements.txt'" || warn "pip install failed for $name"
     fi
 done < "$CONFIG"
 
-echo "[OK] Custom nodes installed."
+ok "Custom nodes installed."

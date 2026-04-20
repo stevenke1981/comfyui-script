@@ -3,8 +3,13 @@
 
 set -euo pipefail
 
+log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
+ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
+
 if [[ $EUID -ne 0 ]]; then
-    echo "[ERR] This step must run as root (use sudo)." >&2
+    err "This step must run as root (use sudo)."
     exit 1
 fi
 
@@ -21,11 +26,11 @@ if [[ -z "$LAN_CIDR" ]]; then
 fi
 
 if [[ -z "$LAN_CIDR" ]]; then
-    echo "[WARN] Could not detect LAN subnet. Falling back to 192.168.0.0/16"
+    warn "Could not detect LAN subnet. Falling back to 192.168.0.0/16"
     LAN_CIDR="192.168.0.0/16"
 fi
 
-echo "[INFO] Allowing TCP $COMFYUI_PORT from $LAN_CIDR via UFW"
+log "Allowing TCP $COMFYUI_PORT from $LAN_CIDR via UFW"
 
 if ! command -v ufw >/dev/null 2>&1; then
     apt-get install -y ufw
@@ -38,4 +43,4 @@ ufw --force enable
 
 ufw status verbose | sed 's/^/[UFW] /'
 
-echo "[OK] Firewall configured. ComfyUI is reachable on port $COMFYUI_PORT from $LAN_CIDR only."
+ok "Firewall configured. ComfyUI is reachable on port $COMFYUI_PORT from $LAN_CIDR only."
