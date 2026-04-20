@@ -25,5 +25,8 @@ https://github.com/Fannovel16/comfyui_controlnet_aux.git
 # Efficiency Nodes — compact workflow building blocks
 https://github.com/jags111/efficiency-nodes-comfyui.git
 
+# ComfyUI-GGUF — UnetLoaderGGUF node for running GGUF quantized models
+https://github.com/city96/ComfyUI-GGUF.git
+
 # VideoHelperSuite — AnimateDiff / video I/O helpers
 https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
