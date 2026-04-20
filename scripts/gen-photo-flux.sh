@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# Generate an image via ComfyUI FLUX.1-schnell API.
+# Usage: gen-photo-flux.sh [OPTIONS] "your prompt here"
+#
+# Options:
+#   -w WIDTH        Image width  (default: 896)
+#   -h HEIGHT       Image height (default: 1152)
+#   -s STEPS        Sampling steps (default: 4)
+#   -g GUIDANCE     Guidance scale (default: 3.5)
+#   -S SEED         Random seed; -1 = random (default: -1)
+#   -o OUTPUT_DIR   Directory to save the image (default: ~/Pictures/comfyui)
+#   -H HOST         ComfyUI host (default: 127.0.0.1:8188)
+#   --open          Open the image after saving (uses xdg-open)
+
+set -euo pipefail
+
+# ── defaults ──────────────────────────────────────────────────────────────────
+HOST="127.0.0.1:8188"
+WIDTH=896
+HEIGHT=1152
+STEPS=4
+GUIDANCE=3.5
+SEED=-1
+OUTPUT_DIR="$HOME/Pictures/comfyui"
+AUTO_OPEN=false
+
+# ── arg parsing ───────────────────────────────────────────────────────────────
+usage() {
+  sed -n '2,14p' "$0" | sed 's/^# //'
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -w) WIDTH="$2";    shift 2 ;;
+    -h) HEIGHT="$2";   shift 2 ;;
+    -s) STEPS="$2";    shift 2 ;;
+    -g) GUIDANCE="$2"; shift 2 ;;
+    -S) SEED="$2";     shift 2 ;;
+    -o) OUTPUT_DIR="$2"; shift 2 ;;
+    -H) HOST="$2";     shift 2 ;;
+    --open) AUTO_OPEN=true; shift ;;
+    --help) usage ;;
+    --) shift; break ;;
+    -*) echo "Unknown option: $1"; usage ;;
+    *) break ;;
+  esac
+done
+
+PROMPT="${*:-}"
+if [[ -z "$PROMPT" ]]; then
+  echo "Error: prompt is required." >&2
+  usage
+fi
+
+# ── resolve seed ──────────────────────────────────────────────────────────────
+if [[ "$SEED" == "-1" ]]; then
+  SEED=$(( RANDOM * RANDOM ))
+fi
+
+# ── check ComfyUI is up ───────────────────────────────────────────────────────
+if ! curl -sf "http://$HOST/system_stats" > /dev/null; then
+  echo "Error: ComfyUI is not reachable at http://$HOST" >&2
+  exit 1
+fi
+
+mkdir -p "$OUTPUT_DIR"
+
+echo "Prompt : $PROMPT"
+echo "Size   : ${WIDTH}x${HEIGHT}  Steps: $STEPS  Guidance: $GUIDANCE  Seed: $SEED"
+echo "Host   : http://$HOST"
+
+# ── build workflow JSON ───────────────────────────────────────────────────────
+WORKFLOW=$(python3 - <<PYEOF
+import json, sys
+
+prompt = sys.argv[1]
+width  = int(sys.argv[2])
+height = int(sys.argv[3])
+steps  = int(sys.argv[4])
+guidance = float(sys.argv[5])
+seed   = int(sys.argv[6])
+
+workflow = {
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {"unet_name": "flux1-schnell.safetensors", "weight_dtype": "fp8_e4m3fn"}
+  },
+  "2": {
+    "class_type": "DualCLIPLoader",
+    "inputs": {
+      "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
+      "clip_name2": "clip_l.safetensors",
+      "type": "flux",
+      "device": "default"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {"vae_name": "flux_ae.safetensors"}
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {"clip": ["2", 0], "text": prompt}
+  },
+  "5": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {"width": width, "height": height, "batch_size": 1}
+  },
+  "6": {
+    "class_type": "FluxGuidance",
+    "inputs": {"conditioning": ["4", 0], "guidance": guidance}
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["6", 0],
+      "negative": ["4", 0],
+      "latent_image": ["5", 0],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "steps": steps,
+      "cfg": 1.0,
+      "denoise": 1.0,
+      "seed": seed
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {"samples": ["7", 0], "vae": ["3", 0]}
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {"images": ["8", 0], "filename_prefix": "flux_gen"}
+  }
+}
+print(json.dumps({"prompt": workflow}))
+PYEOF
+"$PROMPT" "$WIDTH" "$HEIGHT" "$STEPS" "$GUIDANCE" "$SEED")
+
+# ── submit ────────────────────────────────────────────────────────────────────
+RESPONSE=$(curl -sf -X POST "http://$HOST/prompt" \
+  -H "Content-Type: application/json" \
+  -d "$WORKFLOW")
+
+PROMPT_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['prompt_id'])")
+echo "Submitted: $PROMPT_ID"
+
+# ── poll for completion ───────────────────────────────────────────────────────
+echo -n "Generating"
+for i in $(seq 1 120); do
+  sleep 2
+  HISTORY=$(curl -sf "http://$HOST/history/$PROMPT_ID")
+  if [[ -n "$HISTORY" ]] && echo "$HISTORY" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+pid = list(d.keys())[0] if d else ''
+exit(0 if pid and d[pid].get('outputs') else 1)
+" 2>/dev/null; then
+    echo " done."
+    break
+  fi
+  echo -n "."
+  if [[ $i -eq 120 ]]; then
+    echo ""
+    echo "Error: timed out waiting for generation." >&2
+    exit 1
+  fi
+done
+
+# ── download result ───────────────────────────────────────────────────────────
+FILENAME=$(echo "$HISTORY" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+pid = list(d.keys())[0]
+for node in d[pid]['outputs'].values():
+    if 'images' in node:
+        print(node['images'][0]['filename'])
+        break
+")
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+DEST="$OUTPUT_DIR/flux_${TIMESTAMP}_seed${SEED}.png"
+
+curl -sf "http://$HOST/view?filename=${FILENAME}&type=output" -o "$DEST"
+echo "Saved  : $DEST"
+
+if $AUTO_OPEN; then
+  xdg-open "$DEST" &
+fi

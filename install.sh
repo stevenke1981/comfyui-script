@@ -11,6 +11,16 @@ export COMFYUI_PORT="${COMFYUI_PORT:-8188}"
 export COMFYUI_BIND="${COMFYUI_BIND:-0.0.0.0}"
 export COMFYUI_USER="${USER}"
 
+# --dir flag parsed early so usage() can reflect the resolved value
+for _arg in "$@"; do
+    case "$_arg" in
+        --dir=*) COMFYUI_ROOT="${_arg#--dir=}" ;;
+    esac
+done
+unset _arg
+COMFYUI_ROOT="$(eval echo "$COMFYUI_ROOT")"  # expand ~ if present
+export COMFYUI_ROOT
+
 log()  { printf '\033[1;36m[INFO]\033[0m  %s\n' "$*"; }
 warn() { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
 err()  { printf '\033[1;31m[ERR]\033[0m   %s\n' "$*" >&2; }
@@ -33,7 +43,11 @@ usage() {
 ComfyUI Auto-Installer
 
 Usage:
-  ./install.sh [--all | --step NAME]
+  ./install.sh [--all | --step NAME] [--dir PATH]
+
+Options:
+  --dir PATH  Install ComfyUI to PATH (default: ~/ComfyUI)
+              Accepts ~ expansion, e.g. --dir=/data/ComfyUI
 
 Steps (run in order with --all):
   deps        Install system packages  (needs sudo)
@@ -52,8 +66,10 @@ Environment overrides:
   HF_TOKEN=<your token>       (for gated HuggingFace models)
   CIVITAI_TOKEN=<your token>  (for CivitAI models)
 
-Example:
-  COMFYUI_ROOT=~/ComfyUI ./install.sh --all
+Examples:
+  ./install.sh --all
+  ./install.sh --all --dir=/data/ComfyUI
+  ./install.sh --step models --dir=~/ssd/ComfyUI
 EOF
 }
 
@@ -100,8 +116,9 @@ main() {
     local steps=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --all)  all=1; shift ;;
-            --step) steps+=("$2"); shift 2 ;;
+            --all)    all=1; shift ;;
+            --step)   steps+=("$2"); shift 2 ;;
+            --dir=*)  shift ;;  # already parsed above
             -h|--help) usage; exit 0 ;;
             *) err "Unknown argument: $1"; usage; exit 1 ;;
         esac

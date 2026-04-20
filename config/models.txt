@@ -38,4 +38,4 @@ vae|https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safe
 # Upscalers
 # ==============================================================================
 upscale_models|https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth|RealESRGAN_x4plus.pth
-upscale_models|https://huggingface.co/lllyasviel/Annotators/resolve/main/4x-UltraSharp.pth|4x-UltraSharp.pth
+upscale_models|https://huggingface.co/lokCX/4x-UltraSharp/resolve/main/4x-UltraSharp.pth|4x-UltraSharp.pth

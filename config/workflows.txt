@@ -1,22 +1,26 @@
 # Workflow JSONs saved into ComfyUI/user/default/workflows/
 # Format: <subdir>|<url>|<optional filename>
 # <subdir> stays relative to the workflows directory; use "." to put at the root.
+#
+# NOTE: ComfyUI_examples (https://github.com/comfyanonymous/ComfyUI_examples)
+# distributes workflows embedded inside PNG files, not as standalone JSON files.
+# To load a workflow: open ComfyUI, then drag-and-drop any example PNG onto the canvas.
+# Alternatively, host your own JSON files and add entries here.
 
 # ==============================================================================
 # FLUX.1 schnell — matches the unet/clip/vae in models.txt
 # ==============================================================================
-.|https://raw.githubusercontent.com/comfyanonymous/ComfyUI_examples/master/flux/flux_schnell_example.json|flux_schnell.json
+# No canonical JSON source; load via drag-and-drop from the PNG in ComfyUI_examples:
+#   https://github.com/comfyanonymous/ComfyUI_examples/blob/main/flux/flux_schnell_example.png
+# .|<your-hosted-url>/flux_schnell.json|flux_schnell.json
 
 # ==============================================================================
 # SDXL workflows (uncomment if you enabled SDXL models above)
 # ==============================================================================
-# SDXL txt2img with refiner pass
-# .|https://raw.githubusercontent.com/comfyanonymous/ComfyUI_examples/master/sdxl/sdxl_refiner_prompt_example.json|sdxl_refiner.json
-
-# SDXL with LCM LoRA (fast 4-step inference)
-# .|https://raw.githubusercontent.com/comfyanonymous/ComfyUI_examples/master/lcm/lcm_lora_sdxl_example.json|sdxl_lcm.json
+# .|<your-hosted-url>/sdxl_refiner.json|sdxl_refiner.json
+# .|<your-hosted-url>/sdxl_lcm.json|sdxl_lcm.json
 
 # ==============================================================================
 # Upscale workflow — works with RealESRGAN / 4x-UltraSharp loaded above
 # ==============================================================================
-# .|https://raw.githubusercontent.com/comfyanonymous/ComfyUI_examples/master/upscale_models/upscale_example.json|upscale.json
+# .|<your-hosted-url>/upscale.json|upscale.json
