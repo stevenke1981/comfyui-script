@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Download models, LoRAs, VAEs, and workflows from config files.
+# Runs as the current (non-root) user.
+#
 # Config format (one entry per line, #-comments ok):
 #   <subdir>|<url>|<optional_filename>
-# Example:
-#   checkpoints|https://huggingface.co/.../sd_xl_base_1.0.safetensors|sd_xl_base_1.0.safetensors
 
 set -euo pipefail
 
@@ -14,24 +14,20 @@ ok()   { printf '\033[1;32m[OK]\033[0m    %s\n' "$*"; }
 skip() { printf '\033[1;34m[SKIP]\033[0m  %s\n' "$*"; }
 dl()   { printf '\033[1;35m[DL]\033[0m    %s\n' "$*"; }
 
+if [[ $EUID -eq 0 ]]; then
+    err "This step must NOT run as root."
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMFYUI_ROOT="${COMFYUI_ROOT:-$HOME/ComfyUI}"
-COMFYUI_USER="${COMFYUI_USER:-$USER}"
 MODELS_DIR="$COMFYUI_ROOT/models"
 WORKFLOWS_DIR="$COMFYUI_ROOT/user/default/workflows"
-
-run_as_user() {
-    if [[ $EUID -eq 0 ]]; then
-        sudo -u "$COMFYUI_USER" -H bash -c "$*"
-    else
-        bash -c "$*"
-    fi
-}
 
 download_one() {
     local subdir="$1" url="$2" fname="$3" base="$4"
     local target_dir="$base/$subdir"
-    run_as_user "mkdir -p '$target_dir'"
+    mkdir -p "$target_dir"
 
     if [[ -z "$fname" ]]; then
         fname="$(basename "${url%%\?*}")"
@@ -39,28 +35,40 @@ download_one() {
     local out="$target_dir/$fname"
 
     if [[ -s "$out" ]]; then
-        skip "$out (already exists)"
+        skip "$subdir/$fname (already exists)"
         return 0
     fi
 
     dl "$subdir/$fname  <=  $url"
 
-    # Auth header for HuggingFace / Civitai if env var present
-    local hdrs=()
-    if [[ "$url" == *huggingface.co* && -n "${HF_TOKEN:-}" ]]; then
-        hdrs=(--header="Authorization: Bearer $HF_TOKEN")
-    fi
+    # CivitAI: append token as query param
     if [[ "$url" == *civitai.com* && -n "${CIVITAI_TOKEN:-}" ]]; then
-        url="${url}${url/*\?*/&}token=$CIVITAI_TOKEN"
+        if [[ "$url" == *\?* ]]; then
+            url="${url}&token=${CIVITAI_TOKEN}"
+        else
+            url="${url}?token=${CIVITAI_TOKEN}"
+        fi
     fi
 
-    if command -v aria2c >/dev/null 2>&1; then
-        run_as_user "aria2c -x 8 -s 8 -c --dir='$target_dir' --out='$fname' '${hdrs[*]:-}' '$url'" || {
-            warn "aria2c failed, falling back to wget"
-            run_as_user "wget -c -O '$out.part' ${hdrs[*]:-} '$url' && mv '$out.part' '$out'"
-        }
+    # Build auth header for HuggingFace
+    local -a auth=()
+    if [[ "$url" == *huggingface.co* && -n "${HF_TOKEN:-}" ]]; then
+        auth=(-H "Authorization: Bearer ${HF_TOKEN}")
+    fi
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -L --fail --progress-bar "${auth[@]}" -o "${out}.part" "$url" \
+            && mv "${out}.part" "$out"
+    elif command -v wget >/dev/null 2>&1; then
+        local wget_hdr=""
+        [[ ${#auth[@]} -gt 0 ]] && wget_hdr="${auth[1]}"
+        wget -q --show-progress -c \
+            ${wget_hdr:+--header="$wget_hdr"} \
+            -O "${out}.part" "$url" \
+            && mv "${out}.part" "$out"
     else
-        run_as_user "wget -c -O '$out.part' ${hdrs[*]:-} '$url' && mv '$out.part' '$out'"
+        err "Neither curl nor wget found. Install one and retry."
+        exit 1
     fi
 }
 
@@ -88,8 +96,8 @@ process_config() {
 }
 
 log "Downloading models into: $MODELS_DIR"
-process_config "$SCRIPT_DIR/config/models.txt"    "$MODELS_DIR"
-process_config "$SCRIPT_DIR/config/loras.txt"     "$MODELS_DIR"
+process_config "$SCRIPT_DIR/config/models.txt" "$MODELS_DIR"
+process_config "$SCRIPT_DIR/config/loras.txt"  "$MODELS_DIR"
 
 log "Downloading workflows into: $WORKFLOWS_DIR"
 process_config "$SCRIPT_DIR/config/workflows.txt" "$WORKFLOWS_DIR"

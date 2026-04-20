@@ -3,27 +3,39 @@
 # <subdir> is relative to ComfyUI/models/, e.g. checkpoints, vae, clip, clip_vision,
 # controlnet, upscale_models, embeddings, unet.
 #
-# Uncomment the lines you want. Large files — make sure you have the disk space.
+# Large files — make sure you have the disk space.
 # Set HF_TOKEN env var before install for gated HuggingFace repos.
+# Set CIVITAI_TOKEN for CivitAI downloads.
 
-# --- SDXL base + refiner ---
+# ==============================================================================
+# FLUX.1 schnell — fast inference, permissive license (~24 GB total)
+# ==============================================================================
+unet|https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors|flux1-schnell.safetensors
+clip|https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors|clip_l.safetensors
+clip|https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors|t5xxl_fp8_e4m3fn.safetensors
+vae|https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors|flux_ae.safetensors
+
+# ==============================================================================
+# SDXL base + refiner + VAE (~7 GB)
+# ==============================================================================
 # checkpoints|https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors|sd_xl_base_1.0.safetensors
 # checkpoints|https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors|sd_xl_refiner_1.0.safetensors
 # vae|https://huggingface.co/stabilityai/sdxl-vae/resolve/main/sdxl_vae.safetensors|sdxl_vae.safetensors
 
-# --- SD 1.5 ---
+# ==============================================================================
+# SD 1.5 (~2 GB) — lightweight, wide LoRA/ControlNet ecosystem
+# ==============================================================================
 # checkpoints|https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors|v1-5-pruned-emaonly.safetensors
 
-# --- FLUX.1 schnell (fast, non-commercial + commercial friendly) ---
-# unet|https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors|flux1-schnell.safetensors
-# clip|https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors|clip_l.safetensors
-# clip|https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors|t5xxl_fp8_e4m3fn.safetensors
-# vae|https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors|flux_ae.safetensors
-
-# --- ControlNet SDXL ---
+# ==============================================================================
+# ControlNet SDXL
+# ==============================================================================
 # controlnet|https://huggingface.co/xinsir/controlnet-canny-sdxl-1.0/resolve/main/diffusion_pytorch_model.safetensors|controlnet-canny-sdxl.safetensors
+# controlnet|https://huggingface.co/xinsir/controlnet-openpose-sdxl-1.0/resolve/main/diffusion_pytorch_model.safetensors|controlnet-openpose-sdxl.safetensors
 # controlnet|https://huggingface.co/xinsir/controlnet-depth-sdxl-1.0/resolve/main/diffusion_pytorch_model.safetensors|controlnet-depth-sdxl.safetensors
 
-# --- Upscalers ---
-# upscale_models|https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth|RealESRGAN_x4plus.pth
-# upscale_models|https://huggingface.co/lllyasviel/Annotators/resolve/main/4x-UltraSharp.pth|4x-UltraSharp.pth
+# ==============================================================================
+# Upscalers
+# ==============================================================================
+upscale_models|https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth|RealESRGAN_x4plus.pth
+upscale_models|https://huggingface.co/lllyasviel/Annotators/resolve/main/4x-UltraSharp.pth|4x-UltraSharp.pth

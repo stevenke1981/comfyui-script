@@ -1,15 +1,24 @@
 # LoRA list. Same format as models.txt: <subdir>|<url>|<optional filename>
 # <subdir> is usually `loras` (under ComfyUI/models/loras).
 #
-# For Civitai, set CIVITAI_TOKEN to download gated files.
-# Uncomment the lines you want.
+# Set CIVITAI_TOKEN env var for CivitAI gated downloads.
 
-# --- SDXL LoRAs ---
+# ==============================================================================
+# SDXL LoRAs
+# ==============================================================================
+# LCM LoRA — speeds up SDXL to 4-8 steps with no quality loss
 # loras|https://huggingface.co/latent-consistency/lcm-lora-sdxl/resolve/main/pytorch_lora_weights.safetensors|lcm-lora-sdxl.safetensors
-# loras|https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_offset_example-lora_1.0.safetensors|sdxl_offset_example.safetensors
 
-# --- SD 1.5 LoRAs ---
+# Detail Tweaker — adds fine detail / sharpness on top of any SDXL model
+# loras|https://civitai.com/api/download/models/135867|detail-tweaker-xl.safetensors
+
+# ==============================================================================
+# SD 1.5 LoRAs
+# ==============================================================================
+# LCM LoRA — same speed trick for SD 1.5
 # loras|https://huggingface.co/latent-consistency/lcm-lora-sdv1-5/resolve/main/pytorch_lora_weights.safetensors|lcm-lora-sdv1-5.safetensors
 
-# --- Civitai example (replace with a specific version URL) ---
-# loras|https://civitai.com/api/download/models/XXXXXX|example_lora.safetensors
+# ==============================================================================
+# CivitAI template — replace XXXXXX with the model version ID
+# ==============================================================================
+# loras|https://civitai.com/api/download/models/XXXXXX|my_lora.safetensors

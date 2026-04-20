@@ -14,14 +14,14 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMFYUI_ROOT="${COMFYUI_ROOT:-/home/$USER/ComfyUI}"
-COMFYUI_USER="${COMFYUI_USER:-$SUDO_USER}"
+COMFYUI_USER="${COMFYUI_USER:-${SUDO_USER:-}}"
+COMFYUI_ROOT="${COMFYUI_ROOT:-/home/$COMFYUI_USER/ComfyUI}"
 COMFYUI_PORT="${COMFYUI_PORT:-8188}"
 COMFYUI_BIND="${COMFYUI_BIND:-0.0.0.0}"
 COMFYUI_EXTRA_ARGS="${COMFYUI_EXTRA_ARGS:-}"
 
 if [[ -z "$COMFYUI_USER" || "$COMFYUI_USER" == "root" ]]; then
-    err "COMFYUI_USER must be a non-root user. Set it via env or run via sudo as a normal user."
+    err "COMFYUI_USER must be a non-root user. Pass it via: sudo COMFYUI_USER=yourname bash setup_service.sh"
     exit 1
 fi
 

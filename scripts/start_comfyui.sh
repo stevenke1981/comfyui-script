@@ -13,7 +13,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if ! systemctl list-unit-files | grep -q '^comfyui.service'; then
+if [[ ! -f /etc/systemd/system/comfyui.service ]]; then
     err "comfyui.service not installed. Run setup_service first."
     exit 1
 fi
