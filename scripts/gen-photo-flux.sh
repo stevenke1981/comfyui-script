@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Generate an image via ComfyUI FLUX.1-schnell API.
-# Usage: gen-photo-flux.sh [OPTIONS] "your prompt here"
+# Usage: gen-photo-flux.sh [OPTIONS] ["prompt text"]
 #
 # Options:
+#   -f FILE         Read prompt from file (lines starting with # are ignored)
 #   -w WIDTH        Image width  (default: 896)
 #   -h HEIGHT       Image height (default: 1152)
 #   -s STEPS        Sampling steps (default: 4)
@@ -11,6 +12,15 @@
 #   -o OUTPUT_DIR   Directory to save the image (default: ~/Pictures/comfyui)
 #   -H HOST         ComfyUI host (default: 127.0.0.1:8188)
 #   --open          Open the image after saving (uses xdg-open)
+#
+# Prompt files live in config/prompts/*.txt (one prompt per file).
+# Lines starting with # are treated as comments and ignored.
+# Newlines within the file are collapsed into a single prompt string.
+#
+# Examples:
+#   gen-photo-flux.sh -f config/prompts/taiwan_beauty.txt
+#   gen-photo-flux.sh -f config/prompts/taiwan_beauty.txt -S 42 --open
+#   gen-photo-flux.sh "a cat sitting on a roof in Tainan"
 
 set -euo pipefail
 
@@ -23,22 +33,24 @@ GUIDANCE=3.5
 SEED=-1
 OUTPUT_DIR="$HOME/Pictures/comfyui"
 AUTO_OPEN=false
+PROMPT_FILE=""
 
 # ── arg parsing ───────────────────────────────────────────────────────────────
 usage() {
-  sed -n '2,14p' "$0" | sed 's/^# //'
+  awk '/^[^#]/{exit} NR>1{sub(/^# ?/,""); print}' "$0"
   exit 1
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -w) WIDTH="$2";    shift 2 ;;
-    -h) HEIGHT="$2";   shift 2 ;;
-    -s) STEPS="$2";    shift 2 ;;
-    -g) GUIDANCE="$2"; shift 2 ;;
-    -S) SEED="$2";     shift 2 ;;
-    -o) OUTPUT_DIR="$2"; shift 2 ;;
-    -H) HOST="$2";     shift 2 ;;
+    -f) PROMPT_FILE="$2"; shift 2 ;;
+    -w) WIDTH="$2";       shift 2 ;;
+    -h) HEIGHT="$2";      shift 2 ;;
+    -s) STEPS="$2";       shift 2 ;;
+    -g) GUIDANCE="$2";    shift 2 ;;
+    -S) SEED="$2";        shift 2 ;;
+    -o) OUTPUT_DIR="$2";  shift 2 ;;
+    -H) HOST="$2";        shift 2 ;;
     --open) AUTO_OPEN=true; shift ;;
     --help) usage ;;
     --) shift; break ;;
@@ -47,10 +59,24 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-PROMPT="${*:-}"
-if [[ -z "$PROMPT" ]]; then
-  echo "Error: prompt is required." >&2
+# ── resolve prompt ─────────────────────────────────────────────────────────────
+if [[ -n "$PROMPT_FILE" ]]; then
+  if [[ ! -f "$PROMPT_FILE" ]]; then
+    echo "Error: prompt file not found: $PROMPT_FILE" >&2
+    exit 1
+  fi
+  # strip comment lines, collapse newlines into comma-separated string
+  PROMPT=$(grep -v '^\s*#' "$PROMPT_FILE" | grep -v '^\s*$' | tr '\n' ' ' | sed 's/  */ /g; s/^ //; s/ $//')
+elif [[ $# -gt 0 ]]; then
+  PROMPT="$*"
+else
+  echo "Error: provide a prompt via -f FILE or as a positional argument." >&2
   usage
+fi
+
+if [[ -z "$PROMPT" ]]; then
+  echo "Error: prompt is empty." >&2
+  exit 1
 fi
 
 # ── resolve seed ──────────────────────────────────────────────────────────────
@@ -66,7 +92,12 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
-echo "Prompt : $PROMPT"
+# show which source the prompt came from
+if [[ -n "$PROMPT_FILE" ]]; then
+  echo "Prompt : [${PROMPT_FILE}]"
+else
+  echo "Prompt : $PROMPT"
+fi
 echo "Size   : ${WIDTH}x${HEIGHT}  Steps: $STEPS  Guidance: $GUIDANCE  Seed: $SEED"
 echo "Host   : http://$HOST"
 
@@ -74,12 +105,12 @@ echo "Host   : http://$HOST"
 WORKFLOW=$(python3 - <<PYEOF
 import json, sys
 
-prompt = sys.argv[1]
-width  = int(sys.argv[2])
-height = int(sys.argv[3])
-steps  = int(sys.argv[4])
+prompt   = sys.argv[1]
+width    = int(sys.argv[2])
+height   = int(sys.argv[3])
+steps    = int(sys.argv[4])
 guidance = float(sys.argv[5])
-seed   = int(sys.argv[6])
+seed     = int(sys.argv[6])
 
 workflow = {
   "1": {
